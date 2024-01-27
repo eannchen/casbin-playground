@@ -1,98 +1,151 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"strings"
+	"time"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/constant"
+	gormadapter "github.com/casbin/gorm-adapter/v3"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-func main() {
+type CasbinRule struct {
+	ID    uint   `gorm:"primaryKey;autoIncrement"`
+	Ptype string `gorm:"type:varchar(15);uniqueIndex:unique_index"`
+	V0    string `gorm:"type:varchar(100);uniqueIndex:unique_index"`
+	V1    string `gorm:"type:varchar(100);uniqueIndex:unique_index"`
+	V2    string `gorm:"type:varchar(100);uniqueIndex:unique_index"`
+	V3    string `gorm:"type:varchar(100);uniqueIndex:unique_index"`
+	V4    string `gorm:"type:varchar(100);uniqueIndex:unique_index"`
+	V5    string `gorm:"type:varchar(100);uniqueIndex:unique_index"`
 
-	e, err := casbin.NewEnforcer("model_my.conf", "policy_my.csv")
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func main() {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", "user", "password", "127.0.0.1", "3306", "database")
+	db, err := gorm.Open(mysql.New(mysql.Config{
+		DSN: dsn,
+	}))
+	if err != nil {
+		fmt.Errorf("gorm.Open", err)
+	}
+	adapter, err := gormadapter.NewAdapterByDBWithCustomTable(db, &CasbinRule{})
+	if err != nil {
+		fmt.Errorf("gormadapter.NewAdapterByDBWithCustomTable", err)
+	}
+	if err := db.Exec("ALTER TABLE casbin_rule CHANGE `created_at` `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP").Error; err != nil {
+		fmt.Errorf("db.Exec", err)
+	}
+	if err := db.Exec("ALTER TABLE casbin_rule CHANGE `updated_at` `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP").Error; err != nil {
+		fmt.Errorf("db.Exec", err)
+	}
+
+	// e, err := casbin.NewEnforcer("model_my.conf", "policy_my.csv")
+	e, err := casbin.NewEnforcer("model_my.conf", adapter)
 	if err != nil {
 		fmt.Errorf("casbin.NewEnforcer", err)
 	}
-	// e.SetFieldIndex("p", constant.SubjectIndex, 0)
-	// e.SetFieldIndex("p", constant.DomainIndex, 1)
-	// e.SetFieldIndex("p", constant.ObjectIndex, 2)
-	e.SetFieldIndex("p", constant.PriorityIndex, 0)
-	e.SetFieldIndex("p", constant.SubjectIndex, 1)
-	e.SetFieldIndex("p", constant.DomainIndex, 2)
-	e.SetFieldIndex("p", constant.ObjectIndex, 3)
-
+	migrate(e)
+	e.SetFieldIndex("p", constant.SubjectIndex, 0)
+	e.SetFieldIndex("p", constant.DomainIndex, 1)
+	e.SetFieldIndex("p", constant.ObjectIndex, 2)
 	if err := e.LoadPolicy(); err != nil {
 		fmt.Errorf("LoadPolicy", err)
 	}
 
-	// fmt.Printf("GetAllRoles: %#v\n\n", e.GetAllRoles())
-	// fmt.Printf("GetAllNamedRoles: %#v\n\n", e.GetAllNamedRoles("g"))
-	// fmt.Printf("GetAllSubjects: %#v\n\n", e.GetAllSubjects())
-	// fmt.Printf("GetAllNamedSubjects: %#v\n\n", e.GetAllNamedSubjects("p"))
-	// fmt.Printf("GetAllObjects: %#v\n\n", e.GetAllObjects())
-	// fmt.Printf("GetAllNamedObjects: %#v\n\n", e.GetAllNamedObjects("p"))
-
-	j, _ := json.Marshal(e.GetPermissionsForUser("user:ian", "dom:marketing"))
-	fmt.Println("GetPermissionsForUser", string(j))
+	// fmt.Println(e.GetPolicy())
+	// fmt.Println(e.GetNamedGroupingPolicy("g"))
+	// fmt.Println(e.GetNamedGroupingPolicy("g2"))
+	// fmt.Println(e.GetNamedGroupingPolicy("g3"))
 
 	fmt.Println()
-	if r, err := e.GetRolesForUser("user:ian", "dom:admin"); err != nil {
-		fmt.Println("GetRolesForUser err: ", err)
+	j, _ := json.Marshal(e.GetPermissionsForUserInDomain("user:ian", "dom:marketing"))
+	fmt.Println("GetPermissionsForUserInDomain: ", string(j))
+
+	fmt.Println()
+	j1, _ := json.Marshal(e.GetPermissionsForUserInDomain("user:ian", "dom:admin"))
+	fmt.Println("GetPermissionsForUserInDomain: ", string(j1))
+
+	fmt.Println()
+	j2, _ := json.Marshal(e.GetPermissionsForUser("user:ian", "dom:admin", "dom:marketing"))
+	fmt.Println("GetPermissionsForUser: ", string(j2))
+
+	fmt.Println()
+	r, _ := e.GetRolesForUser("user:ian", "dom:admin")
+	fmt.Println("GetRolesForUser: ", r)
+
+	fmt.Println()
+	r1, _ := e.GetRolesForUser("user:ian", "dom:marketing")
+	fmt.Println("GetRolesForUser: ", r1)
+
+	fmt.Println()
+	if ok, err := e.Enforce("user:ian", "dom:admin", "obj:account_admin", "act:read"); err != nil {
+		fmt.Errorf("Enforce err: ", err)
 	} else {
-		fmt.Println("GetRolesForUser: ", r)
+		fmt.Println(ok)
 	}
-
 	fmt.Println()
-	if ok, err := e.Enforce("user:ian", "dom:admin", "obj:news", "act:read"); err != nil {
-		fmt.Println("Enforce err: ", err)
+	if ok, err := e.Enforce("user:ian", "dom:admin", "subscription:exhibition", "act:read"); err != nil {
+		fmt.Errorf("Enforce err: ", err)
 	} else {
 		fmt.Println(ok)
 	}
 
-	// fmt.Printf("GetAllActions: %#v\n\n", e.GetAllActions())
+	if _, err := e.AddNamedGroupingPolicy("g", []string{"user:sonnie", "role:organiser", "dom:guest"}); err != nil {
+		fmt.Errorf("e.AddNamedGroupingPolicy", err)
+	}
+	fmt.Println()
+	if ok, err := e.Enforce("user:sonnie", "dom:guest", "obj:news", "act:create_limited"); err != nil {
+		fmt.Println("Enforce err: ", err)
+	} else {
+		fmt.Println(ok)
+	}
+	fmt.Println()
+	if ok, err := e.Enforce("user:sonnie", "dom:guest", "obj:news", "act:create"); err != nil {
+		fmt.Println("Enforce err: ", err)
+	} else {
+		fmt.Println(ok)
+	}
+}
 
-	// fmt.Println(e.AddRoleForUser("user:vancer", "role:organiser"))
+func migrate(e *casbin.Enforcer) error {
+	records := readCsvFile("policy_my.csv")
+	// fmt.Println(records)
+	return e.GetAdapter().(*gormadapter.Adapter).Transaction(e, func(e casbin.IEnforcer) error {
+		for _, record := range records {
+			if strings.HasPrefix(record[0], "p") {
+				e.AddPolicy(record[1:])
+			} else if strings.HasPrefix(record[0], "g") {
+				e.AddNamedGroupingPolicy(record[0], record[1:])
+			}
+		}
+		return nil
+	})
+}
 
-	// if err := e.SavePolicy(); err != nil {
-	// 	fmt.Println(333, err)
-	// }
+func readCsvFile(filePath string) [][]string {
+	f, err := os.Open(filePath)
+	if err != nil {
+		log.Fatal("Unable to read input file "+filePath, err)
+	}
+	defer f.Close()
 
-	// if r, err := e.GetUsersForRole("role:root"); err != nil {
-	// 	fmt.Println(222, err)
-	// } else {
-	// 	fmt.Println("role:root: ", r)
-	// }
-	// if r, err := e.GetUsersForRole("role:admin"); err != nil {
-	// 	fmt.Println(222, err)
-	// } else {
-	// 	fmt.Println("role:admin: ", r)
-	// }
-	// if r, err := e.GetUsersForRole("role:admin_member"); err != nil {
-	// 	fmt.Println(222, err)
-	// } else {
-	// 	fmt.Println("role:admin_member: ", r)
-	// }
-	// if r, err := e.GetUsersForRole("role:organiser"); err != nil {
-	// 	fmt.Println(222, err)
-	// } else {
-	// 	fmt.Println("role:organiser: ", r)
-	// }
+	csvReader := csv.NewReader(f)
+	csvReader.TrimLeadingSpace = true
+	csvReader.FieldsPerRecord = -1
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		log.Fatal("Unable to parse file as CSV for "+filePath, err)
+	}
 
-	// if ok, err := e.EnforceSafe("role:admin", "obj:news", "act:create"); err != nil {
-	// 	fmt.Println(222, err)
-	// } else {
-	// 	fmt.Println(111, ok)
-	// }
-	// if ok, err := e.EnforceSafe("role:admin_member", "obj:news", "act:create"); err != nil {
-	// 	fmt.Println(222, err)
-	// } else {
-	// 	fmt.Println(111, ok)
-	// }
-	// if ok, err := e.EnforceSafe("user:ian", "obj:account_admin_member", "act:create"); err != nil {
-	// 	fmt.Println(222, err)
-	// } else {
-	// 	fmt.Println(111, ok)
-	// }
-
+	return records
 }

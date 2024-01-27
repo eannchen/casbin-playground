@@ -1,5 +1,4 @@
 p, role:admin, dom:admin, obj:account_admin, act:all, allow
-
 p, role:admin, dom:marketing, obj:account_admin_member, act:all, allow
 p, role:admin, dom:marketing, subscription:exhibition, act:all, allow
 
@@ -10,7 +9,6 @@ p, role:organiser, dom:guest, obj:organiser, act:read, allow
 p, role:organiser, dom:guest, subscription:exhibition_guest, act:all_limited, allow
 
 p, user:ian, dom:admin, subscription:exhibition, act:all, allow
-
 g, user:ian, role:admin, dom:marketing
 g, user:ian, role:admin, dom:admin
 
@@ -23,8 +21,8 @@ g2, obj:organiser, subscription:exhibition
 g2, obj:period, subscription:exhibition
 g2, obj:news_tag, subscription:exhibition
 g2, obj:collaborated_form, subscription:exhibition
-
 g2, subscription:exhibition_guest, subscription:exhibition
+
 g2, obj:exhibition, subscription:exhibition_guest
 g2, obj:news, subscription:exhibition_guest
 
