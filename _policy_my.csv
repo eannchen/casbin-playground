@@ -1,0 +1,41 @@
+p, role:admin, dom:admin, obj:account_admin, act:all, allow
+p, role:admin, dom:marketing, obj:account_admin_member, act:all, allow
+p, role:admin, dom:marketing, subscription:exhibition, act:all, allow
+
+p, role:admin_member, dom:marketing, obj:account_organiser, act:all, allow
+p, role:admin_member, dom:marketing, subscription:exhibition, act:all, allow
+
+p, role:organiser, dom:guest, obj:organiser, act:read, allow
+p, role:organiser, dom:guest, subscription:exhibition_guest, act:all_limited, allow
+
+p, user:ian, dom:admin, subscription:exhibition, act:all, allow
+g, user:ian, role:admin, dom:marketing
+g, user:ian, role:admin, dom:admin
+
+g2, obj:account_admin, subscription:account
+g2, obj:account_admin_member, obj:account_admin
+g2, obj:account_organiser, obj:account_admin_member
+
+g2, obj:location, subscription:exhibition
+g2, obj:organiser, subscription:exhibition
+g2, obj:period, subscription:exhibition
+g2, obj:news_tag, subscription:exhibition
+g2, obj:collaborated_form, subscription:exhibition
+g2, subscription:exhibition_guest, subscription:exhibition
+
+g2, obj:exhibition, subscription:exhibition_guest
+g2, obj:news, subscription:exhibition_guest
+
+g3, act:read, act:all
+g3, act:create, act:all
+g3, act:update, act:all
+g3, act:delete, act:all
+g3, act:read, act:all_limited
+g3, act:list, act:read
+g3, act:get, act:read
+g3, act:create_limited, act:all_limited
+g3, act:update_limited, act:all_limited
+g3, act:delete_limited, act:all_limited
+g3, act:create_limited, act:create
+g3, act:update_limited, act:update
+g3, act:delete_limited, act:delete
