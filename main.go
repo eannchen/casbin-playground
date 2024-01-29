@@ -47,10 +47,8 @@ func main() {
 		fmt.Errorf("casbin.NewEnforcer", err)
 	}
 	e.SetFieldIndex("p", constant.SubjectIndex, 0)
-	e.SetFieldIndex("p", constant.ObjectIndex, 1)
-	// e.SetFieldIndex("p", constant.SubjectIndex, 0)
-	// e.SetFieldIndex("p", constant.DomainIndex, 1)
-	// e.SetFieldIndex("p", constant.ObjectIndex, 2)
+	e.SetFieldIndex("p", constant.DomainIndex, 1)
+	e.SetFieldIndex("p", constant.ObjectIndex, 2)
 
 	adapter := fileadapter.NewAdapter("policy_my.csv")
 	e.SetAdapter(adapter)
@@ -60,40 +58,49 @@ func main() {
 	}
 
 	fmt.Println()
-	r, _ := e.GetImplicitPermissionsForUser("user:sonnie")
+	r, _ := e.GetImplicitPermissionsForUser("user:sonnie", "dom:marketing")
 	j, _ := json.Marshal(r)
 	fmt.Println("GetImplicitPermissionsForUser: ", string(j))
 
 	fmt.Println()
-	r2, _ := e.GetImplicitPermissionsForUser("user:ian")
+	r2, _ := e.GetImplicitPermissionsForUser("user:ian", "dom:marketing")
 	j2, _ := json.Marshal(r2)
 	fmt.Println("GetImplicitPermissionsForUser: ", string(j2))
 
 	fmt.Println()
-	j3, _ := json.Marshal(e.GetAllObjects())
+	j3, _ := json.Marshal(e.GetModel().GetValuesForFieldInPolicyAllTypes("p", 2))
 	fmt.Println("GetAllObjects: ", string(j3))
 
 	fmt.Println()
-	j4, _ := json.Marshal(e.GetAllNamedSubjects("p"))
-	fmt.Println("GetAllNamedSubjects: ", string(j4))
+	j4, _ := json.Marshal(e.GetModel().GetValuesForFieldInPolicy("g", "g", 0))
+	fmt.Println("GetAllSubjects: ", string(j4))
 
 	fmt.Println()
-	j5, _ := json.Marshal(e.GetAllNamedRoles("g"))
-	fmt.Println("GetAllNamedRoles: ", string(j5))
+	j5, _ := json.Marshal(e.GetModel().GetValuesForFieldInPolicy("g", "g", 1))
+	fmt.Println("GetAllRoles: ", string(j5))
 
 	fmt.Println()
-	j6, _ := json.Marshal(e.GetAllActions())
+	j6, _ := json.Marshal(e.GetModel().GetValuesForFieldInPolicyAllTypes("p", 3))
 	fmt.Println("GetAllActions: ", string(j6))
 
 	fmt.Println()
-	j7_, _ := e.GetUsersForRole("role:admin_member")
+	j7_, _ := e.GetUsersForRole("role:admin_member", "dom:marketing")
 	j7, _ := json.Marshal(j7_)
 	fmt.Println("GetUsersForRole: ", string(j7))
 
-	// j8, _ := json.Marshal(e.GetAllUsersByDomain("dom:marketing"))
-	// fmt.Println("GetUsersForRole: ", string(j8))
+	fmt.Println()
+	j8, _ := json.Marshal(e.GetAllUsersByDomain("dom:marketing"))
+	fmt.Println("GetUsersForRole: ", string(j8))
 
 	// e.SetAdapter(adapter)
 
 	// e.AddPolicy(params ...interface{})
+
+	ok, err := e.Enforce("user:ian", "dom:marketing", "obj:news", "act:create")
+	if err != nil {
+		fmt.Errorf("e.Enforce", err)
+	}
+
+	fmt.Printf("%+v", ok)
+
 }

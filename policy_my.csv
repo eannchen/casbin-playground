@@ -1,67 +1,67 @@
-p, role:admin, obj:account_admin_member, act:read, allow
-p, role:admin, obj:account_admin_member, act:create, allow
-p, role:admin, obj:account_admin_member, act:update, allow
-p, role:admin, obj:account_admin_member, act:delete, allow
-p, role:admin, obj:account_organiser, act:read, allow
-p, role:admin, obj:account_organiser, act:create, allow
-p, role:admin, obj:account_organiser, act:update, allow
-p, role:admin, obj:account_organiser, act:delete, allow
-p, role:admin, obj:location, act:read, allow
-p, role:admin, obj:location, act:create, allow
-p, role:admin, obj:location, act:update, allow
-p, role:admin, obj:location, act:delete, allow
-p, role:admin, obj:period, act:read, allow
-p, role:admin, obj:period, act:create, allow
-p, role:admin, obj:period, act:update, allow
-p, role:admin, obj:period, act:delete, allow
-p, role:admin, obj:organiser, act:read, allow
-p, role:admin, obj:organiser, act:create, allow
-p, role:admin, obj:organiser, act:update, allow
-p, role:admin, obj:organiser, act:delete, allow
-p, role:admin, obj:news_tag, act:read, allow
-p, role:admin, obj:news_tag, act:create, allow
-p, role:admin, obj:news_tag, act:update, allow
-p, role:admin, obj:news_tag, act:delete, allow
-p, role:admin, obj:news, act:read, allow
-p, role:admin, obj:news, act:create, allow
-p, role:admin, obj:news, act:update, allow
-p, role:admin, obj:news, act:delete, allow
-p, role:admin, obj:request_form, act:read, allow
-p, role:admin, obj:request_form, act:create, allow
-p, role:admin, obj:request_form, act:update, allow
+p, role:admin, dom:marketing, obj:account_admin_member, act:read, allow
+p, role:admin, dom:marketing, obj:account_admin_member, act:create, allow
+p, role:admin, dom:marketing, obj:account_admin_member, act:update, allow
+p, role:admin, dom:marketing, obj:account_admin_member, act:delete, allow
+p, role:admin, dom:marketing, obj:account_organiser, act:read, allow
+p, role:admin, dom:marketing, obj:account_organiser, act:create, allow
+p, role:admin, dom:marketing, obj:account_organiser, act:update, allow
+p, role:admin, dom:marketing, obj:account_organiser, act:delete, allow
+p, role:admin, dom:marketing, obj:location, act:read, allow
+p, role:admin, dom:marketing, obj:location, act:create, allow
+p, role:admin, dom:marketing, obj:location, act:update, allow
+p, role:admin, dom:marketing, obj:location, act:delete, allow
+p, role:admin, dom:marketing, obj:period, act:read, allow
+p, role:admin, dom:marketing, obj:period, act:create, allow
+p, role:admin, dom:marketing, obj:period, act:update, allow
+p, role:admin, dom:marketing, obj:period, act:delete, allow
+p, role:admin, dom:marketing, obj:organiser, act:read, allow
+p, role:admin, dom:marketing, obj:organiser, act:create, allow
+p, role:admin, dom:marketing, obj:organiser, act:update, allow
+p, role:admin, dom:marketing, obj:organiser, act:delete, allow
+p, role:admin, dom:marketing, obj:news_tag, act:read, allow
+p, role:admin, dom:marketing, obj:news_tag, act:create, allow
+p, role:admin, dom:marketing, obj:news_tag, act:update, allow
+p, role:admin, dom:marketing, obj:news_tag, act:delete, allow
+p, role:admin, dom:marketing, obj:news, act:read, allow
+p, role:admin, dom:marketing, obj:news, act:create, allow
+p, role:admin, dom:marketing, obj:news, act:update, allow
+p, role:admin, dom:marketing, obj:news, act:delete, allow
+p, role:admin, dom:marketing, obj:request_form, act:read, allow
+p, role:admin, dom:marketing, obj:request_form, act:create, allow
+p, role:admin, dom:marketing, obj:request_form, act:update, allow
 
 
-p, role:admin_member, obj:account_organiser, act:read, allow
-p, role:admin_member, obj:account_organiser, act:create, allow
-p, role:admin_member, obj:account_organiser, act:update, allow
-p, role:admin_member, obj:account_organiser, act:delete, allow
-p, role:admin_member, obj:location, act:read, allow
-p, role:admin_member, obj:location, act:create, allow
-p, role:admin_member, obj:location, act:update, allow
-p, role:admin_member, obj:location, act:delete, allow
-p, role:admin_member, obj:period, act:read, allow
-p, role:admin_member, obj:period, act:create, allow
-p, role:admin_member, obj:period, act:update, allow
-p, role:admin_member, obj:period, act:delete, allow
-p, role:admin_member, obj:organiser, act:read, allow
-p, role:admin_member, obj:organiser, act:create, allow
-p, role:admin_member, obj:organiser, act:update, allow
-p, role:admin_member, obj:organiser, act:delete, allow
-p, role:admin_member, obj:news_tag, act:read, allow
-p, role:admin_member, obj:news_tag, act:create, allow
-p, role:admin_member, obj:news_tag, act:update, allow
-p, role:admin_member, obj:news_tag, act:delete, allow
-p, role:admin_member, obj:news, act:read, allow
-p, role:admin_member, obj:news, act:create, allow
-p, role:admin_member, obj:news, act:update, allow
-p, role:admin_member, obj:news, act:delete, allow
-p, role:admin_member, obj:request_form, act:read, allow
-p, role:admin_member, obj:request_form, act:create, allow
-p, role:admin_member, obj:request_form, act:update, allow
-p, role:admin_member, obj:request_form, act:delete, allow
+p, role:admin_member, dom:marketing, obj:account_organiser, act:read, allow
+p, role:admin_member, dom:marketing, obj:account_organiser, act:create, allow
+p, role:admin_member, dom:marketing, obj:account_organiser, act:update, allow
+p, role:admin_member, dom:marketing, obj:account_organiser, act:delete, allow
+p, role:admin_member, dom:marketing, obj:location, act:read, allow
+p, role:admin_member, dom:marketing, obj:location, act:create, allow
+p, role:admin_member, dom:marketing, obj:location, act:update, allow
+p, role:admin_member, dom:marketing, obj:location, act:delete, allow
+p, role:admin_member, dom:marketing, obj:period, act:read, allow
+p, role:admin_member, dom:marketing, obj:period, act:create, allow
+p, role:admin_member, dom:marketing, obj:period, act:update, allow
+p, role:admin_member, dom:marketing, obj:period, act:delete, allow
+p, role:admin_member, dom:marketing, obj:organiser, act:read, allow
+p, role:admin_member, dom:marketing, obj:organiser, act:create, allow
+p, role:admin_member, dom:marketing, obj:organiser, act:update, allow
+p, role:admin_member, dom:marketing, obj:organiser, act:delete, allow
+p, role:admin_member, dom:marketing, obj:news_tag, act:read, allow
+p, role:admin_member, dom:marketing, obj:news_tag, act:create, allow
+p, role:admin_member, dom:marketing, obj:news_tag, act:update, allow
+p, role:admin_member, dom:marketing, obj:news_tag, act:delete, allow
+p, role:admin_member, dom:marketing, obj:news, act:read, allow
+p, role:admin_member, dom:marketing, obj:news, act:create, allow
+p, role:admin_member, dom:marketing, obj:news, act:update, allow
+p, role:admin_member, dom:marketing, obj:news, act:delete, allow
+p, role:admin_member, dom:marketing, obj:request_form, act:read, allow
+p, role:admin_member, dom:marketing, obj:request_form, act:create, allow
+p, role:admin_member, dom:marketing, obj:request_form, act:update, allow
+p, role:admin_member, dom:marketing, obj:request_form, act:delete, allow
 
-g, user:sonnie, role:admin
-g, user:ian, role:admin_member
+g, user:sonnie, role:admin, dom:marketing
+g, user:ian, role:admin_member, dom:marketing
 
 g2, obj:account_admin_member, obj:account_admin
 
