@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/constant"
 	fileadapter "github.com/casbin/casbin/v2/persist/file-adapter"
+	"github.com/pkg/errors"
 )
 
 type User struct {
@@ -60,31 +63,46 @@ type Action struct {
 	Status bool   `json:"status"`
 }
 
-var allObjects = []string{
-	"obj:account",
-	"obj:location",
-	"obj:organiser",
-	"obj:period",
-	"obj:exhibition",
-	"obj:news_tag",
-	"obj:news",
-	"obj:request_form",
+func getAllObjects() []string {
+	return []string{
+		"obj:account",
+		"obj:location",
+		"obj:organiser",
+		"obj:period",
+		"obj:exhibition",
+		"obj:news_tag",
+		"obj:news",
+		"obj:request_form",
+	}
 }
 
-var allActions = []string{
-	"act:read",
-	"act:create",
-	"act:update",
-	"act:delete",
-	"act:create_limited",
-	"act:update_limited",
-	"act:delete_limited",
+func getAllActions() []string {
+	return []string{
+		"act:read",
+		"act:create",
+		"act:update",
+		"act:delete",
+		"act:create_limited",
+		"act:update_limited",
+		"act:delete_limited",
+	}
 }
+
+const (
+	UserPrefix       = "user:"
+	RolePrefix       = "role:"
+	DomPrefix        = "dom:"
+	ObjPrefix        = "obj:"
+	ActPrefix        = "act:"
+	RolePrefixFormat = "role:%s:%d"
+	RootRole         = RolePrefix + DivisionRoleNameRoot + ":0"
+	CompanyDom       = DomPrefix + DivisionNameCompany
+)
 
 func main() {
 	e, err := casbin.NewEnforcer("model_my.conf")
 	if err != nil {
-		fmt.Errorf("casbin.NewEnforcer", err)
+		log.Fatalf("casbin.NewEnforcer: %v", err)
 	}
 	e.SetFieldIndex("p", constant.SubjectIndex, 0)
 	e.SetFieldIndex("p", constant.DomainIndex, 1)
@@ -94,24 +112,32 @@ func main() {
 	e.SetAdapter(adapter)
 
 	if err := e.LoadPolicy(); err != nil {
-		fmt.Errorf("LoadPolicy", err)
+		log.Fatalf("LoadPolicy: %v", err)
 	}
 
-	ListUsersPermission(e)
-	ListDivisionsPermission(e)
+	ctx := context.Background()
+
+	if _, err := ListUsersPermission(ctx, e); err != nil {
+		log.Fatalf("ListUsersPermission: %v", err)
+	}
+	ListDivisionsPermission(ctx, e)
 }
 
-func ListUsersPermission(e *casbin.Enforcer) []User {
+func ListUsersPermission(ctx context.Context, e *casbin.Enforcer) ([]User, error) {
 	users := mockListUsersFromDB()
 
 	for i, user := range users {
 		mUserPermissions := make(map[string][]Action)
 
 		for _, divisionRole := range user.DivisionRoles {
-			user := "user:" + user.Name
-			dom := "dom:" + string(divisionRole.Division.Name)
+			user := UserPrefix + user.Name
+			dom := DomPrefix + string(divisionRole.Division.Name)
 
-			rolePermissions := getUserPermissionsFromPolicy(e, user, dom)
+			rolePermissions, err := getUserPermissionsFromPolicy(ctx, e, user, dom)
+			if err != nil {
+				return nil, errors.Wrap(err, fmt.Sprintf("getUserPermissionsFromPolicy(ctx, e, %s, %s)", user, dom))
+			}
+
 			// users[i].DivisionRoles[j].Permissions = rolePermissions
 
 			for _, permission := range rolePermissions {
@@ -134,10 +160,10 @@ func ListUsersPermission(e *casbin.Enforcer) []User {
 		}
 		users[i].Permissions = userPermissions
 	}
-	return users
+	return users, nil
 }
 
-func mergeActions(existingActions []Action, newActions []Action) []Action {
+func mergeActions(existingActions, newActions []Action) []Action {
 	mergedActions := make([]Action, len(existingActions))
 
 	for i, existingAction := range existingActions {
@@ -154,21 +180,28 @@ func mergeActions(existingActions []Action, newActions []Action) []Action {
 	return mergedActions
 }
 
-func getUserPermissionsFromPolicy(e *casbin.Enforcer, user string, dom string) []Permission {
+func getUserPermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, user string, dom string) ([]Permission, error) {
 
-	if ok, _ := e.HasRoleForUser(user, "role:root:0", dom); ok {
-		return allAllowPermissions()
+	ok, err := e.HasRoleForUser(user, string(RootRole), dom)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("HasRoleForUser(%s, %s, %s)", user, RootRole, dom))
+	}
+	if ok {
+		return allAllowPermissions(), nil
 	}
 
 	mPermissions := make(map[string]map[string]bool)
-	for _, obj := range allObjects {
+	for _, obj := range getAllObjects() {
 		mPermissions[obj] = make(map[string]bool)
-		for _, act := range allActions {
+		for _, act := range getAllActions() {
 			mPermissions[obj][act] = false
 		}
 	}
 
-	policy, _ := e.GetImplicitPermissionsForUser(user, dom)
+	policy, err := e.GetImplicitPermissionsForUser(user, dom)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("GetImplicitPermissionsForUser(%s, %s)", user, dom))
+	}
 	for _, p := range policy {
 		obj, act := p[2], p[3]
 		mPermissions[obj][act] = true
@@ -179,27 +212,28 @@ func getUserPermissionsFromPolicy(e *casbin.Enforcer, user string, dom string) [
 		var actions []Action
 		for act, eft := range mAct {
 			actions = append(actions, Action{
-				Name:   strings.TrimPrefix(act, "act:"),
+				Name:   strings.TrimPrefix(act, ActPrefix),
 				Status: eft,
 			})
 		}
 		permissions = append(permissions, Permission{
-			Name:    strings.TrimPrefix(obj, "obj:"),
+			Name:    strings.TrimPrefix(obj, ObjPrefix),
 			Actions: actions,
 		})
 	}
-	return permissions
+	return permissions, nil
 }
 
-func ListDivisionsPermission(e *casbin.Enforcer) []Division {
+func ListDivisionsPermission(ctx context.Context, e *casbin.Enforcer) []Division {
 	divisions := mockListDivisionsFromDB()
 
 	for i, division := range divisions {
 		for j, divisionRole := range division.DivisionRoles {
-			role := "role:" + string(divisionRole.Name) + ":" + fmt.Sprint(divisionRole.Level)
-			dom := "dom:" + string(division.Name)
+			role := fmt.Sprintf(RolePrefixFormat, divisionRole.Name, divisionRole.Level)
+			// role := RolePrefix + string(divisionRole.Name) + ":" + fmt.Sprint(divisionRole.Level)
+			dom := DomPrefix + string(division.Name)
 
-			permissions := getRolePermissionsFromPolicy(e, role, dom)
+			permissions := getRolePermissionsFromPolicy(ctx, e, role, dom)
 			divisions[i].DivisionRoles[j].Permissions = permissions
 		}
 	}
@@ -207,17 +241,17 @@ func ListDivisionsPermission(e *casbin.Enforcer) []Division {
 	return divisions
 }
 
-func getRolePermissionsFromPolicy(e *casbin.Enforcer, role string, dom string) []Permission {
+func getRolePermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, role string, dom string) []Permission {
 
-	if strings.EqualFold(role, string("role:"+DivisionRoleNameRoot+":0")) &&
-		strings.EqualFold(dom, string("dom:"+DivisionNameCompany)) {
+	if strings.EqualFold(role, string(RootRole)) &&
+		strings.EqualFold(dom, string(CompanyDom)) {
 		return allAllowPermissions()
 	}
 
 	mPermissions := make(map[string]map[string]bool)
-	for _, obj := range allObjects {
+	for _, obj := range getAllObjects() {
 		mPermissions[obj] = make(map[string]bool)
-		for _, act := range allActions {
+		for _, act := range getAllActions() {
 			mPermissions[obj][act] = false
 		}
 	}
@@ -232,31 +266,33 @@ func getRolePermissionsFromPolicy(e *casbin.Enforcer, role string, dom string) [
 		var actions []Action
 		for act, eft := range mAct {
 			actions = append(actions, Action{
-				Name:   strings.TrimPrefix(act, "act:"),
+				Name:   strings.TrimPrefix(act, ActPrefix),
 				Status: eft,
 			})
 		}
 		permissions = append(permissions, Permission{
-			Name:    strings.TrimPrefix(obj, "obj:"),
+			Name:    strings.TrimPrefix(obj, ObjPrefix),
 			Actions: actions,
 		})
 	}
 	return permissions
 }
 
-func allAllowPermissions() (permissions []Permission) {
-	for _, obj := range allObjects {
-		var permission Permission
-		permission.Name = strings.TrimPrefix(obj, "obj:")
-		for _, act := range allActions {
+func allAllowPermissions() []Permission {
+	// Preallocates the slice based on the number of objects for efficiency.
+	permissions := make([]Permission, 0, len(getAllObjects()))
+
+	for _, obj := range getAllObjects() {
+		permission := Permission{Name: strings.TrimPrefix(obj, ObjPrefix)}
+		for _, act := range getAllActions() {
 			permission.Actions = append(permission.Actions, Action{
-				Name:   strings.TrimPrefix(act, "act:"),
+				Name:   strings.TrimPrefix(act, ActPrefix),
 				Status: true,
 			})
 		}
 		permissions = append(permissions, permission)
 	}
-	return
+	return permissions
 }
 
 func mockListUsersFromDB() []User {
