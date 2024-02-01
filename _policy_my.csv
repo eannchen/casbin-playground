@@ -1,4 +1,5 @@
 p, role:admin, dom:admin, obj:account_admin, act:all, allow
+
 p, role:admin, dom:marketing, obj:account_admin_member, act:all, allow
 p, role:admin, dom:marketing, subscription:exhibition, act:all, allow
 

@@ -1,0 +1,16 @@
+p, company:0, company:1
+p, company:1, company:2
+p, company:0, division:1
+p, company:0, guest:-1
+
+p, division:1, division:2
+p, division:2, division:3
+
+g, company:1, company:0
+g, company:2, company:1
+
+g, division:1, company:0
+g, division:2, division:1
+g, division:3, division:2
+
+g, guest:-1, company:0
