@@ -242,21 +242,7 @@ func getUserPermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, user 
 		mPermissions[obj][act] = true
 	}
 
-	var permissions []Permission
-	for obj, mAct := range mPermissions {
-		var actions []Action
-		for act, eft := range mAct {
-			actions = append(actions, Action{
-				Name:   strings.TrimPrefix(act, ActPrefix),
-				Status: eft,
-			})
-		}
-		permissions = append(permissions, Permission{
-			Name:    strings.TrimPrefix(obj, ObjPrefix),
-			Actions: actions,
-		})
-	}
-	return permissions, nil
+	return buildPermissions(mPermissions), nil
 }
 
 func ListDivisionsPermission(ctx context.Context, e *casbin.Enforcer) []Division {
@@ -296,7 +282,12 @@ func getRolePermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, role 
 		mPermissions[obj][act] = true
 	}
 
+	return buildPermissions(mPermissions)
+}
+
+func buildPermissions(mPermissions map[string]map[string]bool) []Permission {
 	var permissions []Permission
+
 	for obj, mAct := range mPermissions {
 		var actions []Action
 		for act, eft := range mAct {
@@ -310,6 +301,7 @@ func getRolePermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, role 
 			Actions: actions,
 		})
 	}
+
 	return permissions
 }
 
