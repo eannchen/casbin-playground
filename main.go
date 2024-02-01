@@ -124,11 +124,29 @@ const (
 	CompanyDom       = DomPrefix + DivisionNameCompany
 )
 
+var allAllowPermissions []Permission
+
 func main() {
 	e, err := casbin.NewEnforcer("model_my.conf")
 	if err != nil {
 		log.Fatalf("casbin.NewEnforcer: %v", err)
 	}
+
+	if err := setupEnforcer(e); err != nil {
+		log.Fatalf("setupEnforcer: %v", err)
+	}
+
+	ctx := context.Background()
+
+	allAllowPermissions = generateAllAllowPermissions()
+
+	if _, err := ListUsersPermission(ctx, e); err != nil {
+		log.Fatalf("ListUsersPermission: %v", err)
+	}
+	ListDivisionsPermission(ctx, e)
+}
+
+func setupEnforcer(e *casbin.Enforcer) error {
 	e.SetFieldIndex("p", constant.SubjectIndex, 0)
 	e.SetFieldIndex("p", constant.DomainIndex, 1)
 	e.SetFieldIndex("p", constant.ObjectIndex, 2)
@@ -137,15 +155,9 @@ func main() {
 	e.SetAdapter(adapter)
 
 	if err := e.LoadPolicy(); err != nil {
-		log.Fatalf("LoadPolicy: %v", err)
+		return errors.Wrap(err, "LoadPolicy")
 	}
-
-	ctx := context.Background()
-
-	if _, err := ListUsersPermission(ctx, e); err != nil {
-		log.Fatalf("ListUsersPermission: %v", err)
-	}
-	ListDivisionsPermission(ctx, e)
+	return nil
 }
 
 func ListUsersPermission(ctx context.Context, e *casbin.Enforcer) ([]User, error) {
@@ -222,7 +234,7 @@ func getUserPermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, user 
 		return nil, errors.Wrap(err, fmt.Sprintf("HasRoleForUser(%s, %s, %s)", user, RootRole, dom))
 	}
 	if ok {
-		return allAllowPermissions(), nil
+		return allAllowPermissions, nil
 	}
 
 	mPermissions := generatePermissionsMapping()
@@ -259,7 +271,7 @@ func getRolePermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, role 
 
 	if strings.EqualFold(role, string(RootRole)) &&
 		strings.EqualFold(dom, string(CompanyDom)) {
-		return allAllowPermissions()
+		return allAllowPermissions
 	}
 
 	mPermissions := generatePermissionsMapping()
@@ -303,7 +315,7 @@ func buildPermissionsFromMapping(mPermissions map[string]map[string]bool) []Perm
 	return permissions
 }
 
-func allAllowPermissions() []Permission {
+func generateAllAllowPermissions() []Permission {
 	// Preallocates the slice based on the number of objects for efficiency.
 	permissions := make([]Permission, 0, len(getAllTrimmedObjects()))
 
