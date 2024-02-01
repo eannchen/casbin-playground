@@ -164,17 +164,27 @@ func ListUsersPermission(ctx context.Context, e *casbin.Enforcer) ([]User, error
 }
 
 func mergeActions(existingActions, newActions []Action) []Action {
-	mergedActions := make([]Action, len(existingActions))
+	mergedMap := make(map[string]Action)
 
-	for i, existingAction := range existingActions {
-		for _, newAction := range newActions {
-			if existingAction.Name == newAction.Name && newAction.Status {
-				mergedActions[i] = newAction
-				break
-			} else {
-				mergedActions[i] = existingAction
-			}
+	// Populate mergedMap with existingActions
+	for _, existingAction := range existingActions {
+		mergedMap[existingAction.Name] = existingAction
+	}
+
+	// Update mergedMap with newActions
+	for _, newAction := range newActions {
+		if existingAction, exists := mergedMap[newAction.Name]; exists && newAction.Status {
+			existingAction.Status = true
+			mergedMap[newAction.Name] = existingAction
+		} else {
+			mergedMap[newAction.Name] = newAction
 		}
+	}
+
+	// Convert map values to slice
+	mergedActions := make([]Action, 0, len(mergedMap))
+	for _, action := range mergedMap {
+		mergedActions = append(mergedActions, action)
 	}
 
 	return mergedActions
