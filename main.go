@@ -76,6 +76,19 @@ func getAllObjects() []string {
 	}
 }
 
+func getAllTrimmedObjects() []string {
+	return []string{
+		"account",
+		"location",
+		"organiser",
+		"period",
+		"exhibition",
+		"news_tag",
+		"news",
+		"request_form",
+	}
+}
+
 func getAllActions() []string {
 	return []string{
 		"act:read",
@@ -85,6 +98,18 @@ func getAllActions() []string {
 		"act:create_limited",
 		"act:update_limited",
 		"act:delete_limited",
+	}
+}
+
+func getAllTrimmedActions() []string {
+	return []string{
+		"read",
+		"create",
+		"update",
+		"delete",
+		"create_limited",
+		"update_limited",
+		"delete_limited",
 	}
 }
 
@@ -290,13 +315,13 @@ func getRolePermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, role 
 
 func allAllowPermissions() []Permission {
 	// Preallocates the slice based on the number of objects for efficiency.
-	permissions := make([]Permission, 0, len(getAllObjects()))
+	permissions := make([]Permission, 0, len(getAllTrimmedObjects()))
 
-	for _, obj := range getAllObjects() {
-		permission := Permission{Name: strings.TrimPrefix(obj, ObjPrefix)}
-		for _, act := range getAllActions() {
+	for _, obj := range getAllTrimmedObjects() {
+		permission := Permission{Name: obj}
+		for _, act := range getAllTrimmedActions() {
 			permission.Actions = append(permission.Actions, Action{
-				Name:   strings.TrimPrefix(act, ActPrefix),
+				Name:   act,
 				Status: true,
 			})
 		}
