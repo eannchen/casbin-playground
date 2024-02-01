@@ -225,14 +225,7 @@ func getUserPermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, user 
 		return allAllowPermissions(), nil
 	}
 
-	mPermissions := make(map[string]map[string]bool)
-	for _, obj := range getAllObjects() {
-		mPermissions[obj] = make(map[string]bool)
-		for _, act := range getAllActions() {
-			mPermissions[obj][act] = false
-		}
-	}
-
+	mPermissions := generatePermissionsMapping()
 	policy, err := e.GetImplicitPermissionsForUser(user, dom)
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("GetImplicitPermissionsForUser(%s, %s)", user, dom))
@@ -242,7 +235,7 @@ func getUserPermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, user 
 		mPermissions[obj][act] = true
 	}
 
-	return buildPermissions(mPermissions), nil
+	return buildPermissionsFromMapping(mPermissions), nil
 }
 
 func ListDivisionsPermission(ctx context.Context, e *casbin.Enforcer) []Division {
@@ -269,6 +262,17 @@ func getRolePermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, role 
 		return allAllowPermissions()
 	}
 
+	mPermissions := generatePermissionsMapping()
+	policy := e.GetFilteredPolicy(0, role, dom)
+	for _, p := range policy {
+		obj, act := p[2], p[3]
+		mPermissions[obj][act] = true
+	}
+
+	return buildPermissionsFromMapping(mPermissions)
+}
+
+func generatePermissionsMapping() map[string]map[string]bool {
 	mPermissions := make(map[string]map[string]bool)
 	for _, obj := range getAllObjects() {
 		mPermissions[obj] = make(map[string]bool)
@@ -276,16 +280,10 @@ func getRolePermissionsFromPolicy(ctx context.Context, e *casbin.Enforcer, role 
 			mPermissions[obj][act] = false
 		}
 	}
-	policy := e.GetFilteredPolicy(0, role, dom)
-	for _, p := range policy {
-		obj, act := p[2], p[3]
-		mPermissions[obj][act] = true
-	}
-
-	return buildPermissions(mPermissions)
+	return mPermissions
 }
 
-func buildPermissions(mPermissions map[string]map[string]bool) []Permission {
+func buildPermissionsFromMapping(mPermissions map[string]map[string]bool) []Permission {
 	var permissions []Permission
 
 	for obj, mAct := range mPermissions {
